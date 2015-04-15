@@ -16,7 +16,7 @@
 /**********************************************************************/
 angular.module('datepickerDirective', ['styleSheetFactory'])
 
-.directive('datepicker', ['$compile', '$styleSheet', function($compile, $styleSheet) {
+.directive('datepicker', ['$compile', 'styleSheetFactory', function($compile, styleSheetFactory) {
     return {
         restrict: 'E',
         template: '<div class="date-picker-content" ripple></div>',
@@ -27,13 +27,13 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
             var val = '';
 
             // The document's stylesheet.
-            var styleSheet = $styleSheet.getStyleSheet();
+            var styleSheet = styleSheetFactory.getStyleSheet();
 
             // The prefix used by the browser for non-standard properties.
-            var prefix = $styleSheet.getPrefix();
+            var prefix = styleSheetFactory.getPrefix();
 
             // Add this directive's styles to the document's stylesheet.
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content',
                 'display: block;' +
                 'height: 256px;' +
                 'margin: -8px;' +
@@ -43,29 +43,29 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                 'user-select: none;' +
                 'width: 224px;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content .hide',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .hide',
                 'opacity: 0;' +
                 'pointer-events: none;' +
                 'visibility: hidden;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content .selected',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .selected',
                 'background-color: #666 !important;' +
                 'color: white !important;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content table',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table',
                 'border-collapse: collapse;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content table .lite',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .lite',
                 'background-color: #eee;' +
                 'color: #ccc;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content table .head1 th',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 th',
                 'background-color: black;' +
                 'color: white;' +
                 'font-weight: normal;' +
                 'position: relative;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content table .head1 .back',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 .back',
                 'line-height: 32px;' +
                 'position: absolute;' +
                 'height: 32px;' +
@@ -73,7 +73,7 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                 'top: 0;' +
                 'left: 0;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content table .head1 .forward',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 .forward',
                 'line-height: 32px;' +
                 'position: absolute;' +
                 'height: 32px;' +
@@ -81,23 +81,23 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                 'top: 0;' +
                 'right: 0;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content table .head1 .back:before',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 .back:before',
                 'content: \'<\';'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content table .head1 .forward:before',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 .forward:before',
                 'content: \'>\';'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content table .head2 th',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head2 th',
                 'background-color: grey;' +
                 'color: white;' +
                 'cursor: auto;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content .calendar, .date-picker-content .months, .date-picker-content .years',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .calendar, .date-picker-content .months, .date-picker-content .years',
                 'display: inline-block;' +
                 'position: absolute;' +
                 'width: 224px;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, 
+            styleSheetFactory.addCSSRule(styleSheet, 
                 '.date-picker-content .calendar th,' +
                 '.date-picker-content .calendar td,' +
                 '.date-picker-content .months td,' +
@@ -112,25 +112,25 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                     'text-align: center;' +
                     'width: 32px;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content .months .head1 th',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .months .head1 th',
                 'width: 224px;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content .months td',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .months td',
                 'height: 48px;' +
                 'line-height: 48px;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content .months .spacing td',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .months .spacing td',
                 'cursor: auto;' + 
                 'height: 32px;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content .years .head1 th',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .years .head1 th',
                 'cursor: auto;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content .years .spacing td',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .years .spacing td',
                 'cursor: auto;' + 
                 'height: 32px;'
             , 1);
-            $styleSheet.addCSSRule(styleSheet, '.date-picker-content .years td',
+            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .years td',
                 'height: 64px;' +
                 'line-height: 64px;'
             , 1);
