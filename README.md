@@ -22,10 +22,10 @@ angular.module('myApp', ['datepickerDirective']);
 Last, simply add a `<popup-directive>` element you reference from an event on an element.
 ```html
 <input type="text" ng-focus="popup01.show($event)" ng-model="mydate">
-<datepicker-directive close-callback="popup01.hide" input-model="mydate"></datepicker-directive>
+<datepicker-directive input-model="mydate"></datepicker-directive>
 ```
 
-With popupDirective:
+Or, with popupDirective:
 ```html
 <input type="text" ng-focus="popup01.show($event)" ng-model="mydate">
 <popup-directive api="popup01">
