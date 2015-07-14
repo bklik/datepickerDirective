@@ -4,28 +4,86 @@
  * 
  * Prerequisites:
  *  - AngularJS
- *  - popupDirective
  *  - styleSheetFactory (https://github.com/bklik/styleSheetFactory)
+ *  - popupDirective (optional)
  * 
  * Description:
- * Creates the expanding/fading material design circle effect, that
- * radiates from a click/touch's origin. Any element where this
- * directive is used, should have the following CSS properties:
- *  - position: relative;
- *  - overflow: hidden; (recommended)
+ * Creates a datepicker control.
 /**********************************************************************/
 angular.module('datepickerDirective', ['styleSheetFactory'])
 
-.directive('datepicker', ['$compile', 'styleSheetFactory', function($compile, styleSheetFactory) {
+.directive('datepickerDirective', ['$timeout', 'styleSheetFactory', function($timeout, styleSheetFactory) {
     return {
+        scope: {
+            'closeCallback': '=',
+            'inputModel': '=',
+        },
         restrict: 'E',
-        template: '<div class="date-picker-content" ripple></div>',
-        replace: true,
-        transclude: true,
-        link: function(scope, element, attrs, ctrl, transclude) {
-            // Variable to track the value.
-            var val = '';
-
+        template: '' +
+            '<table class="calendar" ng-class="{hide: (calendar != \'calendar\')}">' +
+                '<thead>' +
+                    '<tr class="head1">' +
+                        '<th colspan="7" ng-click="calendar = \'months\';"><div class="back" ng-click="backMonth($event);"></div>{{monthNames[displayDate.getMonth()] + " " + displayDate.getFullYear()}}<div class="forward" ng-click="forwardMonth($event);"></div></th>' +
+                    '</tr>' +
+                    '<tr class="head2">' +
+                        '<th>Su</th>' +
+                        '<th>Mo</th>' +
+                        '<th>Tu</th>' +
+                        '<th>We</th>' +
+                        '<th>Th</th>' +
+                        '<th>Fr</th>' +
+                        '<th>Sa</th>' +
+                    '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                    '<tr ng-repeat="week in monthArray">' +
+                        '<td ng-repeat="day in week" ng-class="{lite: day.lite, selected: day.selected}" ng-click="setDate(day.value);">{{day.label}}</td>' +
+                    '</tr>' +
+                '</tbody>' +
+            '</table>' +
+            '<table class="months" ng-class="{hide: (calendar != \'months\')}">' +
+                '<thead>' +
+                    '<tr class="head1">' +
+                        '<th colspan="6" ng-click="calendar = \'years\';"><div class="back icon-chevron-left" ng-click="backYear($event);"></div>{{displayDate.getFullYear()}}<div class="forward icon-chevron-right" ng-click="forwardYear($event);"></div></th>' +
+                    '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                    '<tr ng-repeat="row in yearArray">' +
+                        '<td ng-repeat="month in row" ng-class="{selected: month.selected}" ng-click="setMonth(month.num)" colspan="2">{{month.value}}</td>' +
+                    '</tr>' +
+                    '<tr class="spacing">' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                    '</tr>' +
+                '</tbody>' +
+            '</table>' +
+            '<table class="years" ng-class="{hide: (calendar != \'years\')}">' +
+                '<thead>' +
+                    '<tr class="head1">' +
+                        '<th colspan="8"><div class="back icon-chevron-left" ng-click="backDecade($event);"></div>{{(displayDate.getFullYear() - (displayDate.getFullYear() % 10)) + " - " + (displayDate.getFullYear() - (displayDate.getFullYear() % 10) + 9)}}<div class="forward icon-chevron-right" ng-click="forwardDecade($event);"></div></th>' +
+                    '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                    '<tr ng-repeat="years in decadeArray">' +
+                        '<td ng-repeat="year in years" ng-class="{lite: year.lite, selected: year.selected}" colspan="2" ng-click="setYear(year.value)">{{year.value}}</td>' +
+                    '</tr>' +
+                    '<tr class="spacing">' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                        '<td></td>' +
+                    '</tr>' +
+                '</tbody>' +
+            '</table>',
+        link: function($scope, $element, $attrs) {
             // The document's stylesheet.
             var styleSheet = styleSheetFactory.getStyleSheet();
 
@@ -33,39 +91,38 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
             var prefix = styleSheetFactory.getPrefix();
 
             // Add this directive's styles to the document's stylesheet.
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive',
                 'display: block;' +
                 'height: 256px;' +
-                'margin: -8px;' +
                 'overflow: hidden;' +
                 'position: relative;' +
                 '-'+prefix+'-user-select: none;' +
                 'user-select: none;' +
                 'width: 224px;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .hide',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive .hide',
                 'opacity: 0;' +
                 'pointer-events: none;' +
                 'visibility: hidden;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .selected',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive .selected',
                 'background-color: #666 !important;' +
                 'color: white !important;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive table',
                 'border-collapse: collapse;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .lite',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive table .lite',
                 'background-color: #eee;' +
                 'color: #ccc;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 th',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive table .head1 th',
                 'background-color: black;' +
                 'color: white;' +
                 'font-weight: normal;' +
                 'position: relative;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 .back',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive table .head1 .back',
                 'line-height: 32px;' +
                 'position: absolute;' +
                 'height: 32px;' +
@@ -73,7 +130,7 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                 'top: 0;' +
                 'left: 0;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 .forward',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive table .head1 .forward',
                 'line-height: 32px;' +
                 'position: absolute;' +
                 'height: 32px;' +
@@ -81,29 +138,29 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                 'top: 0;' +
                 'right: 0;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 .back:before',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive table .head1 .back:before',
                 'content: \'<\';'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head1 .forward:before',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive table .head1 .forward:before',
                 'content: \'>\';'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content table .head2 th',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive table .head2 th',
                 'background-color: grey;' +
                 'color: white;' +
                 'cursor: auto;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .calendar, .date-picker-content .months, .date-picker-content .years',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive .calendar, datepicker-directive .months, datepicker-directive .years',
                 'display: inline-block;' +
                 'position: absolute;' +
                 'width: 224px;'
             , 1);
             styleSheetFactory.addCSSRule(styleSheet, 
-                '.date-picker-content .calendar th,' +
-                '.date-picker-content .calendar td,' +
-                '.date-picker-content .months td,' +
-                '.date-picker-content .months th,' +
-                '.date-picker-content .years td,' +
-                '.date-picker-content .years th',
+                'datepicker-directive .calendar th,' +
+                'datepicker-directive .calendar td,' +
+                'datepicker-directive .months td,' +
+                'datepicker-directive .months th,' +
+                'datepicker-directive .years td,' +
+                'datepicker-directive .years th',
                     'background-color: white;' +
                     'box-sizing: border-box;' +
                     'color: black;' +
@@ -112,117 +169,60 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                     'text-align: center;' +
                     'width: 32px;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .months .head1 th',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive .months .head1 th',
                 'width: 224px;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .months td',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive .months td',
                 'height: 48px;' +
                 'line-height: 48px;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .months .spacing td',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive .months .spacing td',
                 'cursor: auto;' + 
                 'height: 32px;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .years .head1 th',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive .years .head1 th',
                 'cursor: auto;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .years .spacing td',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive .years .spacing td',
                 'cursor: auto;' + 
                 'height: 32px;'
             , 1);
-            styleSheetFactory.addCSSRule(styleSheet, '.date-picker-content .years td',
+            styleSheetFactory.addCSSRule(styleSheet, 'datepicker-directive .years td',
                 'height: 64px;' +
                 'line-height: 64px;'
             , 1);
 
-            scope.calendar = 'calendar';
-            scope.monthNames = [
+            $scope.calendar = 'calendar';
+            $scope.monthNames = [
                 'January', 'February', 'March',
                 'April', 'May', 'June',
                 'July', 'August', 'September',
                 'October', 'November', 'December'
             ];
-            scope.selectedDate = new Date();
-            scope.displayDate = new Date();
-            scope.monthArray = new Array();
-            scope.yearArray = new Array();
-            scope.decadeArray = new Array();
-
-            transclude(scope, function(clone, scope) {
-                var calendar = '' +
-                    '<table class="calendar" ng-class="{hide: (calendar != \'calendar\')}">' +
-                        '<thead>' +
-                            '<tr class="head1">' +
-                                '<th colspan="7" ng-click="calendar = \'months\';"><div class="back" ng-click="backMonth($event);"></div>{{monthNames[displayDate.getMonth()] + " " + displayDate.getFullYear()}}<div class="forward" ng-click="forwardMonth($event);"></div></th>' +
-                            '</tr>' +
-                            '<tr class="head2">' +
-                                '<th>Su</th>' +
-                                '<th>Mo</th>' +
-                                '<th>Tu</th>' +
-                                '<th>We</th>' +
-                                '<th>Th</th>' +
-                                '<th>Fr</th>' +
-                                '<th>Sa</th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody>' +
-                            '<tr ng-repeat="week in monthArray">' +
-                                '<td ng-repeat="day in week" ng-class="{lite: day.lite, selected: day.selected}" ng-click="setDate(day.value);">{{day.label}}</td>' +
-                            '</tr>' +
-                        '</tbody>' +
-                    '</table>' +
-                    '<table class="months" ng-class="{hide: (calendar != \'months\')}">' +
-                        '<thead>' +
-                            '<tr class="head1">' +
-                                '<th colspan="6" ng-click="calendar = \'years\';"><div class="back icon-chevron-left" ng-click="backYear($event);"></div>{{displayDate.getFullYear()}}<div class="forward icon-chevron-right" ng-click="forwardYear($event);"></div></th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody>' +
-                            '<tr ng-repeat="row in yearArray">' +
-                                '<td ng-repeat="month in row" ng-class="{selected: month.selected}" ng-click="setMonth(month.num)" colspan="2">{{month.value}}</td>' +
-                            '</tr>' +
-                            '<tr class="spacing">' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                            '</tr>' +
-                        '</tbody>' +
-                    '</table>' +
-                    '<table class="years" ng-class="{hide: (calendar != \'years\')}">' +
-                        '<thead>' +
-                            '<tr class="head1">' +
-                                '<th colspan="8"><div class="back icon-chevron-left" ng-click="backDecade($event);"></div>{{(displayDate.getFullYear() - (displayDate.getFullYear() % 10)) + " - " + (displayDate.getFullYear() - (displayDate.getFullYear() % 10) + 9)}}<div class="forward icon-chevron-right" ng-click="forwardDecade($event);"></div></th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody>' +
-                            '<tr ng-repeat="years in decadeArray">' +
-                                '<td ng-repeat="year in years" ng-class="{lite: year.lite, selected: year.selected}" colspan="2" ng-click="setYear(year.value)">{{year.value}}</td>' +
-                            '</tr>' +
-                            '<tr class="spacing">' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                                '<td></td>' +
-                            '</tr>' +
-                        '</tbody>' +
-                    '</table>';
-                var cCalendar = $compile(calendar)(scope);
-                element.append(cCalendar);
-            });
+            if(typeof $scope.inputModel !== 'undefined') {
+                $scope.inputModel = new Date($scope.inputModel);
+            } else {
+                $scope.inputModel = new Date();
+                $scope.inputModel = new Date(
+                    $scope.inputModel.getFullYear(),
+                    $scope.inputModel.getMonth(),
+                    $scope.inputModel.getDate(),
+                    23,
+                    59,
+                    59,
+                    999
+                );
+            }
+            $scope.displayDate = new Date();
+            $scope.monthArray = new Array();
+            $scope.yearArray = new Array();
+            $scope.decadeArray = new Array();
 
             var buildCalendars = function() {
-
                 // Create the Julian Calendar
-                scope.monthArray = new Array();
-                var currentMonth = scope.displayDate.getMonth();
-                var currentDate = new Date(scope.displayDate.getFullYear(), scope.displayDate.getMonth(), 1);
+                $scope.monthArray = new Array();
+                var currentMonth = $scope.displayDate.getMonth();
+                var currentDate = new Date($scope.displayDate.getFullYear(), $scope.displayDate.getMonth(), 1);
                 currentDate.setDate(currentDate.getDate()-currentDate.getDay());
 
                 for(var i=0; i<6; i++) {
@@ -231,22 +231,30 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                     for(var j=0; j<7; j++) {
                         weekArray.push({
                             'label': currentDate.getDate(),
-                            'value': new Date(currentDate),
+                            'value': new Date(
+                                currentDate.getFullYear(),
+                                currentDate.getMonth(),
+                                currentDate.getDate(),
+                                23,
+                                59,
+                                59,
+                                999
+                            ),
                             'lite': !(currentDate.getMonth() == currentMonth),
                             'selected': (
-                                currentDate.getMonth() == scope.selectedDate.getMonth() &&
-                                currentDate.getDate() == scope.selectedDate.getDate() &&
-                                currentDate.getFullYear() == scope.selectedDate.getFullYear()
-                                )
+                                currentDate.getMonth() == $scope.inputModel.getMonth() &&
+                                currentDate.getDate() == $scope.inputModel.getDate() &&
+                                currentDate.getFullYear() == $scope.inputModel.getFullYear()
+                            )
                         });
                         currentDate.setDate(currentDate.getDate()+1);
                     }
 
-                    scope.monthArray.push(weekArray);
+                    $scope.monthArray.push(weekArray);
                 }
 
                 // Create the Months Calendar
-                scope.yearArray = new Array();
+                $scope.yearArray = new Array();
                 var monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 var monthNum = 0;
                 for(var i=0; i<4; i++) {
@@ -257,20 +265,20 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                             'num': monthNum++,
                             'value': monthNamesShort.shift(),
                             'selected': (
-                                monthNum-1 == scope.selectedDate.getMonth() &&
-                                scope.displayDate.getFullYear() == scope.selectedDate.getFullYear()
-                                )
+                                monthNum-1 == $scope.inputModel.getMonth() &&
+                                $scope.displayDate.getFullYear() == $scope.inputModel.getFullYear()
+                            )
                         });
                     }
 
-                    scope.yearArray.push(monthRow);
+                    $scope.yearArray.push(monthRow);
                 }
 
                 // Creat the Years Calendar
-                scope.decadeArray = new Array();
+                $scope.decadeArray = new Array();
                 var years = new Array();
                 for(var y=0; y<12; y++) {
-                    var year = scope.displayDate.getFullYear();
+                    var year = $scope.displayDate.getFullYear();
                     year = year - (year % 10) + (y -1);
                     years.push(year);
                 }
@@ -283,110 +291,78 @@ angular.module('datepickerDirective', ['styleSheetFactory'])
                         yearRow.push({
                             'value': y,
                             'lite': ((i == 0 && j == 0) || (i == 2 && j == 3)),
-                            'selected': (y == scope.selectedDate.getFullYear())
+                            'selected': (y == $scope.inputModel.getFullYear())
                         });
                     }
 
-                    scope.decadeArray.push(yearRow);
+                    $scope.decadeArray.push(yearRow);
                 }
             };
 
             // Calendar Back/Forward Buttons
-            scope.backMonth = function(event) {
+            $scope.backMonth = function(event) {
                 event.stopPropagation();
-                scope.displayDate.setMonth(scope.displayDate.getMonth() - 1);
+                $scope.displayDate.setMonth($scope.displayDate.getMonth() - 1);
+                buildCalendars();
             };
-            scope.forwardMonth = function(event) {
+            $scope.forwardMonth = function(event) {
                 event.stopPropagation();
-                scope.displayDate.setMonth(scope.displayDate.getMonth() + 1);
+                $scope.displayDate.setMonth($scope.displayDate.getMonth() + 1);
+                buildCalendars();
             };
 
             // Month Calendar Back/Forward Buttons
-            scope.backYear = function(event) {
+            $scope.backYear = function(event) {
                 event.stopPropagation();
-                scope.displayDate.setFullYear(scope.displayDate.getFullYear() - 1);
+                $scope.displayDate.setFullYear($scope.displayDate.getFullYear() - 1);
+                buildCalendars();
             };
-            scope.forwardYear = function(event) {
+            $scope.forwardYear = function(event) {
                 event.stopPropagation();
-                scope.displayDate.setFullYear(scope.displayDate.getFullYear() + 1);
+                $scope.displayDate.setFullYear($scope.displayDate.getFullYear() + 1);
+                buildCalendars();
             };
 
             // Decade Calendar Back/Forward Buttons
-            scope.backDecade = function(event) {
+            $scope.backDecade = function(event) {
                 event.stopPropagation();
-                scope.displayDate.setFullYear(scope.displayDate.getFullYear() - 10);
-            };
-            scope.forwardDecade = function(event) {
-                event.stopPropagation();
-                scope.displayDate.setFullYear(scope.displayDate.getFullYear() + 10);
-            };
-
-            scope.setDate = function(d) {
-                scope.selectedDate = d;
-
-                scope.displayDate = new Date(scope.selectedDate);
-
-                var d = scope.selectedDate.getDate();
-                d = (d<10) ? "0"+d : d;
-                var m = scope.selectedDate.getMonth()+1;
-                m = (m<10) ? "0"+m : m;
-                val = scope.selectedDate.getFullYear() + "-" + m + "-" + d;
-
-                updateValue(null);
-                scope.closeContent(null);
-            };
-
-            scope.setYear = function(y) {
-                scope.displayDate.setFullYear(y);
-                scope.calendar = 'months';
-            };
-
-            scope.setMonth = function(m) {
-                scope.displayDate.setMonth(m);
-                scope.calendar = 'calendar';
-            };
-
-            scope.$watch('displayDate', function() {
+                $scope.displayDate.setFullYear($scope.displayDate.getFullYear() - 10);
                 buildCalendars();
-            }, true);
+            };
+            $scope.forwardDecade = function(event) {
+                event.stopPropagation();
+                $scope.displayDate.setFullYear($scope.displayDate.getFullYear() + 10);
+                buildCalendars();
+            };
 
-            // POPUP_VALUE is broadcast when the popup is first opened.
-            // Listen for it, and store it's value.
-            scope.$on("POPUP_VALUE", function(event, message) {
-                val = message;
+            $scope.setDate = function(d) {
+                $scope.inputModel = d;
 
-                scope.selectedDate = new Date();
-                scope.displayDate = new Date();
+                $scope.displayDate = new Date($scope.inputModel);
 
-                var tmpVal = val.split('-');
-
-                if(tmpVal.length == 3) {
-                    var y = parseInt(tmpVal[0]);
-                    var m = parseInt(tmpVal[1]);
-                    var d = parseInt(tmpVal[2]);
-
-                    if(y+'' != 'NaN' && m+'' != 'NaN' && d+'' != 'NaN') {
-                        scope.selectedDate = new Date();
-                        scope.selectedDate.setFullYear(y);
-                        scope.selectedDate.setMonth(m-1);
-                        scope.selectedDate.setDate(d);
-
-                        scope.displayDate = new Date(scope.selectedDate);
-                    }
+                if(typeof $scope.closeCallback !== 'undefined') {
+                    $scope.closeCallback();
                 }
 
-                scope.$apply();
-            });
-
-            // Submit the current value back to the popup
-            var updateValue = function(event) {
-                scope.$emit("UPDATE_POPUP", val);
+                buildCalendars();
             };
 
-            // Request the popup be closed
-            scope.closeContent = function(event) {
-                scope.$emit("CLOSE_POPUP");
+            $scope.setYear = function(y) {
+                $scope.displayDate.setFullYear(y);
+                $scope.calendar = 'months';
+                buildCalendars();
             };
+
+            $scope.setMonth = function(m) {
+                $scope.displayDate.setMonth(m);
+                $scope.calendar = 'calendar';
+                buildCalendars();
+            };
+
+            $scope.$watch('inputModel', function() {
+                $scope.displayDate = new Date($scope.inputModel);
+                buildCalendars();
+            }, false);
         }
     }
 }]);
