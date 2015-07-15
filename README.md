@@ -19,7 +19,7 @@ In your app's directives.js file, add the datepickerDirective module.
 angular.module('myApp', ['datepickerDirective']);
 ```
 
-Last, simply add a `<popup-directive>` element you reference from an event on an element.
+Last, simply add a `<datepicker-directive>` element\.
 ```html
 <input type="text" ng-model="mydate">
 <datepicker-directive input-model="mydate"></datepicker-directive>
