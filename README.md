@@ -1,5 +1,5 @@
 # Datepicker Directive
-A directive that adds date functionality to the popupDirective.
+A directive that adds a datepicker control.
 
 **Requirements**
 
@@ -14,7 +14,7 @@ Link to popup's CSS and Javascript files.
 <script src="datepickerDirective/datepickerDirective.js"></script>
 ```
 
-In your app's directives.js file, add the popup.directives module.
+In your app's directives.js file, add the datepickerDirective module.
 ```javascript
 angular.module('myApp', ['datepickerDirective']);
 ```
